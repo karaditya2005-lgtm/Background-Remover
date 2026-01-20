@@ -3,8 +3,7 @@ import express from 'express'
 import cors from 'cors'
 import { connect } from 'mongoose'
 import connectDB from './configs/mongodb.js'
-import dotenv from "dotenv";
-dotenv.config();
+
 // App Config
 const PORT = process.env.PORT || 4000
 const app = express()
