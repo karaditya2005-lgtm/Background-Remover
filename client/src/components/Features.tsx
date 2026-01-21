@@ -53,7 +53,7 @@ export default function Features() {
                     ))}
                 </div>
             </div>
-            <div className="mt-12 sm:m-4 sm:mt-20 relative w-full max-w-3xl overflow-hidden m-auto rounded-3xl">
+            <div className="mt-12 sm:mt-20 relative w-full max-w-3xl overflow-hidden m-auto rounded-3xl">
 
   {/* Background Image */}
   <img

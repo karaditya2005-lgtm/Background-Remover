@@ -1,32 +1,47 @@
-import React, { useState, useRef } from 'react';
-import { Upload, Download, Loader2, X, Check } from 'lucide-react';
+import { useState, useRef, useContext } from 'react';
+import { Upload, Download, Loader2, X, Check, LogIn } from 'lucide-react';
+import { useAuth, useUser, useClerk } from '@clerk/clerk-react';
+import { AppContext } from '../context/AppContext';
+import { toast } from 'react-toastify';
 
 const BackgroundRemover = () => {
-  const [originalImage, setOriginalImage] = useState<string | null>(null);
-  const [processedImage, setProcessedImage] = useState<string | null>(null);
+  const [originalImage, setOriginalImage] = useState(null);
+  const [processedImage, setProcessedImage] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef(null);
 
-  const handleFileSelect = (file: File) => {
+  const { getToken } = useAuth();
+  const { isSignedIn, user } = useUser(); // ⭐ Get user object
+  const { openSignIn } = useClerk();
+  const appContext = useContext(AppContext);
+  
+  // ⭐ Debug: Log user data
+  console.log('Clerk User:', user);
+  console.log('User ID:', user?.id);
+
+  if (!appContext) throw new Error("AppContext not found");
+  const { credit, loadCreditData, backendUrl } = appContext;
+
+  const handleFileSelect = (file) => {
     if (file && file.type.startsWith('image/')) {
       const reader = new FileReader();
       reader.onload = (e) => {
-        setOriginalImage(e.target?.result as string);
+        setOriginalImage(e.target?.result);
         setProcessedImage(null);
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = (e) => {
     e.preventDefault();
     setIsDragging(false);
     const file = e.dataTransfer.files[0];
     if (file) handleFileSelect(file);
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver = (e) => {
     e.preventDefault();
     setIsDragging(true);
   };
@@ -36,54 +51,61 @@ const BackgroundRemover = () => {
   };
 
   const removeBackground = async () => {
-    if (!originalImage) return;
+    if (!isSignedIn) {
+      toast.error('Please login to remove background');
+      openSignIn({});
+      return;
+    }
+
+    if (!originalImage) {
+      toast.error('Please upload an image first');
+      return;
+    }
+
+    if (credit < 1) {
+      toast.error('Insufficient credits. Please purchase more credits.');
+      return;
+    }
 
     setIsProcessing(true);
 
     try {
-      const base64Data = originalImage.split(',')[1];
-      const mimeType = originalImage.split(',')[0].split(':')[1].split(';')[0];
-      
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
+      const token = await getToken();
+
+      // Convert base64 to blob
+      const base64Response = await fetch(originalImage);
+      const blob = await base64Response.blob();
+
+      // Create form data
+      const formData = new FormData();
+      formData.append('image', blob, 'image.png');
+
+      const url = `${backendUrl.replace(/\/$/, '')}/api/image/remove-bg`;
+      console.log('API URL:', url);
+
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1000,
-          messages: [
-            {
-              role: 'user',
-              content: [
-                {
-                  type: 'image',
-                  source: {
-                    type: 'base64',
-                    media_type: mimeType,
-                    data: base64Data
-                  }
-                },
-                {
-                  type: 'text',
-                  text: 'Describe the main subject in this image that should be kept when removing the background.'
-                }
-              ]
-            }
-          ]
-        })
+        body: formData
       });
 
-      await response.json();
-      
-      // Simulate processing delay
-      setTimeout(() => {
-        setProcessedImage(originalImage);
-        setIsProcessing(false);
-      }, 2000);
+      const data = await response.json();
+      console.log('API Response:', data);
+
+      if (data.success) {
+        setProcessedImage(data.data.processedImageUrl); // ⭐ Use Cloudinary URL
+        await loadCreditData();
+        toast.success('Background removed successfully!');
+      } else {
+        toast.error(data.message || 'Failed to remove background');
+      }
       
     } catch (error) {
       console.error('Error:', error);
+      toast.error('Failed to remove background');
+    } finally {
       setIsProcessing(false);
     }
   };
@@ -117,6 +139,12 @@ const BackgroundRemover = () => {
               <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white">AI Background Remover</h1>
             </div>
             <p className="text-slate-300 text-sm sm:text-base lg:text-lg px-2">Upload your image and remove the background instantly</p>
+            
+            {isSignedIn && (
+              <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-white/10 rounded-full border border-white/20">
+                <span className="text-white text-sm font-medium">Credits: {credit}</span>
+              </div>
+            )}
           </div>
 
           {!originalImage ? (

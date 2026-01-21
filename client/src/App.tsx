@@ -7,6 +7,7 @@ import { Routes, Route } from 'react-router-dom';
 import BackgroundRemover from './components/BackgroundRemover';
  import { ToastContainer, toast } from 'react-toastify';
   import 'react-toastify/dist/ReactToastify.css'
+import ImageHistory from './components/ImageHistory';
 
 function App() {
 	return (
@@ -18,6 +19,7 @@ function App() {
 			<Routes>
 				<Route path="/" element={<Home />} />
 				<Route path="/bg-remover" element={<BackgroundRemover />} />
+				<Route path="/img-history" element={<ImageHistory />} />
 			</Routes>
 			<Footer />
 		</>

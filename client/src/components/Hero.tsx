@@ -34,7 +34,7 @@ export default function Hero() {
                 <div className="max-w-6xl mx-auto px-4 min-h-screen max-md:w-screen max-md:overflow-hidden pt-32 md:pt-26 flex items-center justify-center">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
                         <div className="text-left">
-                            <motion.a href="https://prebuiltui.com/tailwind-templates?ref=pixel-forge" className="inline-flex items-center gap-3 pl-3 pr-4 py-1.5 rounded-full bg-white/10 mb-6 justify-start"
+                            <motion.a href="https://github.com/SamratTheProgrammer" className="inline-flex items-center gap-3 pl-3 pr-4 py-1.5 rounded-full bg-white/10 mb-6 justify-start"
                                 initial={{ y: 60, opacity: 0 }}
                                 whileInView={{ y: 0, opacity: 1 }}
                                 viewport={{ once: true }}
@@ -139,8 +139,8 @@ Perfect for thumbnails, products, profiles, and social media.
                             viewport={{ once: true }}
                             transition={{ type: "spring", stiffness: 250, damping: 70, mass: 1, delay: 0.5 }}
                         >
-                            <motion.div className="rounded-3xl overflow-hidden border border-white/6 shadow-2xl bg-linear-to-b from-black/50 to-transparent">
-                                <div className="relative aspect-8/8 bg-gray-900">
+                            <motion.div className="rounded-3xl overflow-hidden">
+                                <div className="relative aspect-8/8">
                                     <img
                                         src={mainImageUrl}
                                         alt="agency-work-preview"
@@ -154,7 +154,7 @@ Perfect for thumbnails, products, profiles, and social media.
                                     <div className="absolute right-4 bottom-4">
                                         <button className="inline-flex items-center gap-2 rounded-full px-4 py-2 bg-white/6 backdrop-blur-sm hover:bg-white/10 transition focus:outline-none">
                                             <PlayIcon className="size-4" />
-                                            <span className="text-xs">See case study</span>
+                                            <span className="text-xs">See how works</span>
                                         </button>
                                     </div>
                                 </div>
