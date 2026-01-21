@@ -88,14 +88,14 @@ Perfect for thumbnails, products, profiles, and social media.
                                 viewport={{ once: true }}
                                 transition={{ type: "spring", stiffness: 250, damping: 70, mass: 1, delay: 0.3 }}
                             >
-                                <Link to="/bg-remover">
-                                <a className="w-full sm:w-auto">
+                                <Link to="/bg-remover" className="w-full sm:w-auto">
+                               
                                     <PrimaryButton className="max-sm:w-full py-3 px-7">
                                         ⚡ Start Now
                                         <ArrowRightIcon className="size-4" />
                                     </PrimaryButton>
-                                </a>
-</Link>
+                                
+                                </Link>
                                 <GhostButton className="max-sm:w-full max-sm:justify-center py-3 px-5">
                                     <PlayIcon className="size-4" />
                                    See Demo

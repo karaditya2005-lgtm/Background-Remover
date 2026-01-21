@@ -5,13 +5,15 @@ import Footer from './components/Footer';
 import LenisScroll from './components/lenis';
 import { Routes, Route } from 'react-router-dom';
 import BackgroundRemover from './components/BackgroundRemover';
-
+ import { ToastContainer, toast } from 'react-toastify';
+  import 'react-toastify/dist/ReactToastify.css'
 
 function App() {
 	return (
 		<>
 			<SoftBackdrop />
 			<LenisScroll />
+			<ToastContainer position='top-right' />
 			<Navbar />
 			<Routes>
 				<Route path="/" element={<Home />} />

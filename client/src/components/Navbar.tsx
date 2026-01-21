@@ -1,10 +1,10 @@
 import { MenuIcon, XIcon } from 'lucide-react';
 import { PrimaryButton } from './Buttons';
-import { useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useClerk, UserButton, useUser } from '@clerk/clerk-react';
-import { div } from 'framer-motion/client';
-
+import { AppContext } from '../context/AppContext';
+import creditIcon from '../assets/credit_icon.png'
 export default function Navbar() {
     const [isOpen, setIsOpen] = useState(false);
 
@@ -17,7 +17,12 @@ export default function Navbar() {
 
     const {openSignIn} = useClerk();
     const {isSignedIn, user} = useUser();
-
+    const { credit, loadCreditData } = useContext(AppContext)
+    useEffect(()=>{
+        if(isSignedIn){
+            loadCreditData()
+        }
+    },[isSignedIn])
     return (
         <motion.nav className='fixed top-5 left-0 right-0 z-50 px-4'
             initial={{ y: -100, opacity: 0 }}
@@ -41,7 +46,19 @@ export default function Navbar() {
                 <div className='hidden md:flex items-center gap-3'>
                     {
                         isSignedIn ?
-                        <div>
+                        <div className='flex justify-center '>
+                             <span className=" flex justify-center items-center gap-2
+                                    px-3 py-1 
+                                    mr-2
+                                    text-[0.8rem] 
+                                    text-white/90 
+                                    rounded-full 
+                                    backdrop-blur-md 
+                                    bg-white/10 
+                                    border border-white/20
+                                "> <img src={creditIcon} className="w-4 h-4" alt="" />
+                                    Credits : {credit}
+                                </span>
                             <UserButton />
                         </div>
                         :
@@ -71,7 +88,12 @@ export default function Navbar() {
 
                 {
                         isSignedIn ?
-                        <div>
+                        <div className='flex flex-col gap-6 justify-center items-center'>
+                            <span className=" flex justify-center items-center gap-2
+                                   text-lg font-medium
+                                "> 
+                                    Credits : {credit}
+                                </span>
                             <UserButton />
                         </div>
                         :
