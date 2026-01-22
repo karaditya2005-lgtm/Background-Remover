@@ -7,29 +7,30 @@ import { useEffect, useState } from 'react';
 
 export default function Hero() {
 const [userCount, setUserCount] = useState(0); // Default value
-const [imageCount, setImageCount] = useState(20);
+const [imageCount, setImageCount] = useState(0);
     // Fetch user count
-    useEffect(() => {
-        const fetchUserCount = async () => {
+     useEffect(() => {
+        const fetchCounts = async () => {
             try {
-                const response = await fetch('http://localhost:4000/api/user/count'); // Update with your backend URL
-                const data = await response.json();
-                if (data.success) {
-                    setUserCount(data.count);
+                // Fetch user count
+                const userResponse = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/user/count`);
+                const userData = await userResponse.json();
+                if (userData.success) {
+                    setUserCount(userData.count);
                 }
 
-                 // Fetch image count
-                const imageResponse = await fetch('http://localhost:4000/api/image/count');
+                // Fetch image count
+                const imageResponse = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/image/count`);
                 const imageData = await imageResponse.json();
                 if (imageData.success) {
                     setImageCount(imageData.count);
                 }
             } catch (error) {
-                console.log('Error fetching user count:', error);
+                console.log('Error fetching counts:', error);
             }
         };
 
-        fetchUserCount();
+        fetchCounts();
     }, []);
     const trustedUserImages = [
         'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=50',
