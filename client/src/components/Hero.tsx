@@ -3,9 +3,34 @@ import { PrimaryButton, GhostButton } from './Buttons';
 import { motion } from 'framer-motion';
 import mainImg from '../assets/header_img.png'
 import { Link } from 'react-router';
+import { useEffect, useState } from 'react';
 
 export default function Hero() {
+const [userCount, setUserCount] = useState(0); // Default value
+const [imageCount, setImageCount] = useState(20);
+    // Fetch user count
+    useEffect(() => {
+        const fetchUserCount = async () => {
+            try {
+                const response = await fetch('http://localhost:4000/api/user/count'); // Update with your backend URL
+                const data = await response.json();
+                if (data.success) {
+                    setUserCount(data.count);
+                }
 
+                 // Fetch image count
+                const imageResponse = await fetch('http://localhost:4000/api/image/count');
+                const imageData = await imageResponse.json();
+                if (imageData.success) {
+                    setImageCount(imageData.count);
+                }
+            } catch (error) {
+                console.log('Error fetching user count:', error);
+            }
+        };
+
+        fetchUserCount();
+    }, []);
     const trustedUserImages = [
         'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=50',
         'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=50',
@@ -53,7 +78,7 @@ export default function Hero() {
                                     ))}
                                 </div>
                                 <span className="text-xs text-gray-200/90">
-                                    Trusted by creators & students worldwide
+                                    Trusted by {userCount}+ creators & students worldwide
                                 </span>
                             </motion.a>
 
@@ -154,10 +179,10 @@ Perfect for thumbnails, products, profiles, and social media.
                                     </div>
 
                                     <div className="absolute right-4 bottom-4">
-                                        <button className="inline-flex items-center gap-2 rounded-full px-4 py-2 bg-white/6 backdrop-blur-sm hover:bg-white/10 transition focus:outline-none">
+                                        <Link to="/vid-demo" className="inline-flex items-center gap-2 rounded-full px-4 py-2 bg-white/6 backdrop-blur-sm hover:bg-white/10 transition focus:outline-none">
                                             <PlayIcon className="size-4" />
                                             <span className="text-xs">See how works</span>
-                                        </button>
+                                        </Link>
                                     </div>
                                 </div>
                             </motion.div>
@@ -190,7 +215,7 @@ Perfect for thumbnails, products, profiles, and social media.
 
                                         <span className="relative inline-flex size-2 rounded-full bg-green-600" />
                                     </div>
-                                    20+ completed images
+                                    {imageCount}+ completed images
                                 </motion.div>
                             </div>
                         </motion.div>

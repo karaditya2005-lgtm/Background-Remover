@@ -188,5 +188,18 @@ const deleteImage = async (req, res) => {
         res.json({ success: false, message: error.message });
     }
 };
+const getImageCount = async (req, res) => {
+    try {
+        const totalImages = await imageModel.countDocuments();
+        
+        res.json({
+            success: true,
+            count: totalImages
+        });
+    } catch (error) {
+        console.error('Get image count error:', error);
+        res.json({ success: false, message: error.message });
+    }
+};
 
-export { removeBgImage, getImageHistory, deleteImage };
+export { removeBgImage, getImageHistory, deleteImage, getImageCount };
