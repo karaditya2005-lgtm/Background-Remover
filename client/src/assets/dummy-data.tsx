@@ -100,8 +100,8 @@ export const footerLinks = [
     {
         title: "Company",
         links: [
-            { name: "Home", url: "#" },
-            { name: "Services", url: "#" },
+            { name: "Home", url: "/#" },
+            { name: "Services", url: "/#features" },
             { name: "Work", url: "#" },
             { name: "Contact", url: "#" }
         ]
@@ -116,9 +116,10 @@ export const footerLinks = [
     {
         title: "Connect",
         links: [
-            { name: "Twitter", url: "#" },
-            { name: "LinkedIn", url: "#" },
-            { name: "GitHub", url: "#" }
+            { name: "Instagram", url: "https://www.instagram.com/__itzsamrat__/" },
+            { name: "LinkedIn", url: "https://www.linkedin.com/in/samrat-saha-414580305/" },
+            { name: "GitHub", url: "https://github.com/SamratTheProgrammer" },
+            {name: "Facebook", url: "https://www.facebook.com/samrat.saha.550178"}
         ]
     }
 ];
