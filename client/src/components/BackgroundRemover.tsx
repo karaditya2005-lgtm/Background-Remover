@@ -5,43 +5,59 @@ import { AppContext } from '../context/AppContext';
 import { toast } from 'react-toastify';
 
 const BackgroundRemover = () => {
-  const [originalImage, setOriginalImage] = useState(null);
-  const [processedImage, setProcessedImage] = useState(null);
+  const [originalImage, setOriginalImage] = useState<string | null>(null);
+  const [processedImage, setProcessedImage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-  const fileInputRef = useRef(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [backgroundColor, setBackgroundColor] = useState<string>('transparent');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const { getToken } = useAuth();
-  const { isSignedIn, user } = useUser(); // ⭐ Get user object
+  const { isSignedIn, user } = useUser();
   const { openSignIn } = useClerk();
   const appContext = useContext(AppContext);
   
-  // ⭐ Debug: Log user data
   console.log('Clerk User:', user);
   console.log('User ID:', user?.id);
 
   if (!appContext) throw new Error("AppContext not found");
   const { credit, loadCreditData, backendUrl } = appContext;
 
-  const handleFileSelect = (file) => {
+  const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB in bytes
+
+  const handleFileSelect = (file: File) => {
     if (file && file.type.startsWith('image/')) {
+      // Check file size
+      const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+      
+      if (file.size > MAX_FILE_SIZE) {
+        toast.error(`File is too large (${fileSizeMB}MB). Maximum size allowed is 50MB. Please compress your image and try again.`);
+        return;
+      }
+
       const reader = new FileReader();
       reader.onload = (e) => {
-        setOriginalImage(e.target?.result);
+        setOriginalImage(e.target?.result as string);
         setProcessedImage(null);
+        setSelectedFile(file);
+        setBackgroundColor('transparent');
       };
       reader.readAsDataURL(file);
+    } else {
+      toast.error('Please select a valid image file (JPEG, PNG, or WEBP)');
     }
   };
 
-  const handleDrop = (e) => {
+  const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
     const file = e.dataTransfer.files[0];
     if (file) handleFileSelect(file);
   };
 
-  const handleDragOver = (e) => {
+  const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(true);
   };
@@ -57,7 +73,7 @@ const BackgroundRemover = () => {
       return;
     }
 
-    if (!originalImage) {
+    if (!originalImage || !selectedFile) {
       toast.error('Please upload an image first');
       return;
     }
@@ -67,21 +83,27 @@ const BackgroundRemover = () => {
       return;
     }
 
+    // Double check file size before sending
+    const fileSizeMB = (selectedFile.size / (1024 * 1024)).toFixed(2);
+    console.log('File size:', fileSizeMB, 'MB');
+    
+    if (selectedFile.size > MAX_FILE_SIZE) {
+      toast.error(`Your image is ${fileSizeMB}MB. Maximum allowed is 50MB. Please compress and try again.`);
+      return;
+    }
+
     setIsProcessing(true);
 
     try {
       const token = await getToken();
 
-      // Convert base64 to blob
-      const base64Response = await fetch(originalImage);
-      const blob = await base64Response.blob();
-
-      // Create form data
+      // Create form data with the original file
       const formData = new FormData();
-      formData.append('image', blob, 'image.png');
+      formData.append('image', selectedFile);
 
       const url = `${backendUrl.replace(/\/$/, '')}/api/image/remove-bg`;
       console.log('API URL:', url);
+      console.log('Uploading file:', selectedFile.name, `(${fileSizeMB}MB)`);
 
       const response = await fetch(url, {
         method: 'POST',
@@ -95,7 +117,7 @@ const BackgroundRemover = () => {
       console.log('API Response:', data);
 
       if (data.success) {
-        setProcessedImage(data.data.processedImageUrl); // ⭐ Use Cloudinary URL
+        setProcessedImage(data.data.processedImageUrl);
         await loadCreditData();
         toast.success('Background removed successfully!');
       } else {
@@ -110,19 +132,94 @@ const BackgroundRemover = () => {
     }
   };
 
-  const downloadImage = () => {
+  const applyBackgroundColor = (imageUrl: string, bgColor: string): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        if (!ctx) {
+          resolve(imageUrl);
+          return;
+        }
+
+        canvas.width = img.width;
+        canvas.height = img.height;
+
+        // Fill background color (if not transparent)
+        if (bgColor !== 'transparent') {
+          ctx.fillStyle = bgColor;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        // Draw the image on top
+        ctx.drawImage(img, 0, 0);
+
+        resolve(canvas.toDataURL('image/png'));
+      };
+
+      img.onerror = () => {
+        resolve(imageUrl);
+      };
+
+      img.src = imageUrl;
+    });
+  };
+
+  const downloadImage = async () => {
     if (!processedImage) return;
     
-    const link = document.createElement('a');
-    link.href = processedImage;
-    link.download = 'background-removed.png';
-    link.click();
+    try {
+      let downloadUrl = processedImage;
+      
+      // Apply background color if not transparent
+      if (backgroundColor !== 'transparent') {
+        downloadUrl = await applyBackgroundColor(processedImage, backgroundColor);
+      }
+      
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `background-removed-${backgroundColor === 'transparent' ? 'transparent' : 'colored'}.png`;
+      link.click();
+      
+      toast.success('Image downloaded successfully!');
+    } catch (error) {
+      console.error('Download error:', error);
+      toast.error('Failed to download image');
+    }
   };
 
   const reset = () => {
     setOriginalImage(null);
     setProcessedImage(null);
     setIsProcessing(false);
+    setSelectedFile(null);
+    setBackgroundColor('transparent');
+  };
+
+  const colorPresets = [
+    { name: 'Transparent', value: 'transparent' },
+    { name: 'White', value: '#FFFFFF' },
+    { name: 'Black', value: '#000000' },
+    { name: 'Red', value: '#EF4444' },
+    { name: 'Blue', value: '#3B82F6' },
+    { name: 'Green', value: '#10B981' },
+    { name: 'Yellow', value: '#F59E0B' },
+    { name: 'Purple', value: '#A855F7' },
+  ];
+
+  const getPreviewBackground = () => {
+    if (backgroundColor === 'transparent') {
+      return {
+        backgroundImage: 'linear-gradient(45deg, #1e293b 25%, transparent 25%), linear-gradient(-45deg, #1e293b 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #1e293b 75%), linear-gradient(-45deg, transparent 75%, #1e293b 75%)',
+        backgroundSize: '20px 20px',
+        backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px'
+      };
+    }
+    return { backgroundColor };
   };
 
   return (
@@ -182,7 +279,7 @@ const BackgroundRemover = () => {
                 Choose Image
               </button>
               
-              <p className="text-slate-500 mt-4 sm:mt-6 text-xs sm:text-sm">Supports: JPG, PNG, WEBP</p>
+              <p className="text-slate-500 mt-4 sm:mt-6 text-xs sm:text-sm">Supports: JPG, PNG, WEBP (Max 50MB)</p>
             </div>
           ) : (
             <div className="space-y-4 sm:space-y-6">
@@ -209,11 +306,7 @@ const BackgroundRemover = () => {
                   <div className="relative rounded-lg sm:rounded-xl overflow-hidden bg-slate-800/50 border border-white/10">
                     {processedImage ? (
                       <>
-                        <div className="absolute inset-0" style={{
-                          backgroundImage: 'linear-gradient(45deg, #1e293b 25%, transparent 25%), linear-gradient(-45deg, #1e293b 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #1e293b 75%), linear-gradient(-45deg, transparent 75%, #1e293b 75%)',
-                          backgroundSize: '20px 20px',
-                          backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px'
-                        }}></div>
+                        <div className="absolute inset-0" style={getPreviewBackground()}></div>
                         <img
                           src={processedImage}
                           alt="Processed"
@@ -239,6 +332,56 @@ const BackgroundRemover = () => {
                   </div>
                 </div>
               </div>
+
+              {processedImage && (
+                <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+                  <h4 className="text-xs font-semibold text-white mb-2">Background Color</h4>
+                  
+                  {/* Color Presets */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {colorPresets.map((color) => (
+                      <button
+                        key={color.value}
+                        onClick={() => setBackgroundColor(color.value)}
+                        className={`relative w-8 h-8 rounded-md overflow-hidden transition-all hover:scale-110 ${
+                          backgroundColor === color.value ? 'ring-2 ring-blue-500' : 'ring-1 ring-white/20'
+                        }`}
+                        title={color.name}
+                      >
+                        <div
+                          className="w-full h-full"
+                          style={
+                            color.value === 'transparent'
+                              ? {
+                                  backgroundImage: 'linear-gradient(45deg, #1e293b 25%, transparent 25%), linear-gradient(-45deg, #1e293b 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #1e293b 75%), linear-gradient(-45deg, transparent 75%, #1e293b 75%)',
+                                  backgroundSize: '8px 8px',
+                                  backgroundPosition: '0 0, 0 4px, 4px -4px, -4px 0px'
+                                }
+                              : { backgroundColor: color.value }
+                          }
+                        />
+                        {backgroundColor === color.value && (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <Check className="w-3 h-3 text-white drop-shadow-lg" />
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                    
+                    {/* Custom Color Picker */}
+                    <div className="flex items-center gap-2 ml-2 pl-2 border-l border-white/20">
+                      <input
+                        type="color"
+                        value={backgroundColor === 'transparent' ? '#FFFFFF' : backgroundColor}
+                        onChange={(e) => setBackgroundColor(e.target.value)}
+                        className="w-8 h-8 rounded-md cursor-pointer border border-white/20"
+                        title="Custom color"
+                      />
+                      <span className="text-[10px] font-mono text-slate-400">{backgroundColor === 'transparent' ? 'None' : backgroundColor}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 justify-center pt-2 sm:pt-4">
                 {!processedImage && !isProcessing && (
@@ -273,6 +416,7 @@ const BackgroundRemover = () => {
           )}
         </div>
       </div>
+      <canvas ref={canvasRef} className="hidden" />
     </div>
   );
 };

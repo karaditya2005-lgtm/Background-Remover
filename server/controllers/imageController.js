@@ -8,6 +8,13 @@ import { uploadToCloudinary } from '../configs/cloudinary.js';
 const removeBgImage = async (req, res) => {
     try {
         console.log('🔥 Remove BG endpoint hit!');
+        console.log('📦 Content-Length header:', req.headers['content-length']);
+        console.log('📁 File info:', req.file ? {
+            originalname: req.file.originalname,
+            size: req.file.size,
+            sizeInMB: (req.file.size / (1024 * 1024)).toFixed(2) + 'MB',
+            mimetype: req.file.mimetype
+        } : 'NO FILE RECEIVED');
         
         const { clerkId } = req.body;
         console.log('📌 ClerkId from req.body:', clerkId);
@@ -164,7 +171,7 @@ const deleteImage = async (req, res) => {
         }
 
         // Delete from Cloudinary
-        const { deleteFromCloudinary } = await import('../config/cloudinary.js');
+        const { deleteFromCloudinary } = await import('../configs/cloudinary.js');
         await deleteFromCloudinary(image.originalPublicId);
         await deleteFromCloudinary(image.processedPublicId);
 

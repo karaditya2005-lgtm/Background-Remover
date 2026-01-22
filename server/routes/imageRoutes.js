@@ -10,7 +10,7 @@ const imageRouter = express.Router();
 const upload = multer({
     storage: multer.memoryStorage(),
     limits: {
-        fileSize: 50 * 1024 * 1024 // 50MB limit (increased from 10MB)
+        fileSize: 100 * 1024 * 1024 // 100MB limit to handle base64 overhead
     },
     fileFilter: (req, file, cb) => {
         // Optional: Add file type validation
@@ -27,9 +27,13 @@ const upload = multer({
 const handleMulterError = (err, req, res, next) => {
     if (err instanceof multer.MulterError) {
         if (err.code === 'LIMIT_FILE_SIZE') {
+            // Get the file size if available
+            const fileSize = req.file?.size || req.headers['content-length'];
+            const fileSizeMB = fileSize ? (fileSize / (1024 * 1024)).toFixed(2) : 'unknown';
+            
             return res.json({ 
                 success: false, 
-                message: 'File is too large. Maximum size allowed is 50MB. Please compress your image and try again.' 
+                message: `File is too large (${fileSizeMB}MB). Maximum size allowed is 100MB. Please compress your image and try again.` 
             });
         }
         return res.json({ 

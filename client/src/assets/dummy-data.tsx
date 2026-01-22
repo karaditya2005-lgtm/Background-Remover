@@ -20,48 +20,50 @@ export const featuresData = [
 
 export const plansData = [
   {
-    id: 'free',
-    name: 'Free',
-    price: '₹0',
-    desc: 'Try background removal with basic features.',
-    credits: 'Limited',
-    features: [
-      'Basic background removal',
-      'Low-resolution download',
-      'PNG transparent background',
-      'Standard processing speed',
-      'Community support'
-    ]
-  },
-  {
-    id: 'pro',
-    name: 'Pro',
-    price: '₹299',
-    desc: 'Perfect for creators and freelancers.',
-    credits: 'Monthly',
-    features: [
-      'Everything in Free',
-      'High-resolution downloads',
-      'No watermark',
-      'Faster processing',
-      'Priority support'
-    ],
-    popular: true
-  },
-  {
-    id: 'business',
-    name: 'Business',
-    price: '₹999',
-    desc: 'Best for teams and commercial usage.',
-    credits: 'Monthly',
-    features: [
-      'Everything in Pro',
-      'Unlimited background removals',
-      'Bulk image upload',
-      'API access (coming soon)',
-      'Dedicated support'
-    ]
-  }
+        id: 'basic',
+        name: 'Basic',
+        price: '₹99',
+        credits: '10 credits',
+        desc: 'Perfect for occasional use',
+        popular: false,
+        features: [
+            '10 Background Removals',
+            'High Quality Output',
+            'Fast Processing',
+            '24/7 Support'
+        ]
+    },
+    {
+        id: 'standard',
+        name: 'Standard',
+        price: '₹399',
+        credits: '50 credits',
+        desc: 'Best value for regular users',
+        popular: true,
+        features: [
+            '50 Background Removals',
+            'High Quality Output',
+            'Fast Processing',
+            '24/7 Support',
+            'Priority Queue'
+        ]
+    },
+    {
+        id: 'premium',
+        name: 'Premium',
+        price: '₹699',
+        credits: '100 credits',
+        desc: 'For power users and professionals',
+        popular: false,
+        features: [
+            '100 Background Removals',
+            'High Quality Output',
+            'Fast Processing',
+            '24/7 Support',
+            'Priority Queue',
+            'Bulk Processing'
+        ]
+    }
 ];
 
 
