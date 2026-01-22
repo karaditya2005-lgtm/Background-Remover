@@ -96,7 +96,7 @@ Perfect for thumbnails, products, profiles, and social media.
                                     </PrimaryButton>
                                 
                                 </Link>
-                                    <Link to="/vid-demo">
+                                    <Link to="/vid-demo" className="w-full sm:w-auto">
                                 <GhostButton className="max-sm:w-full max-sm:justify-center py-3 px-5">
                                     <PlayIcon className="size-4" />
                                    See Demo
