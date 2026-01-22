@@ -13,14 +13,14 @@ export default function VideoDemo() {
       <div className="max-w-5xl w-full space-y-12">
         
         {/* Header Section */}
-        <div className="text-center space-y-6 mt-24">
-          <h1 className="text-4xl md:text-5xl font-bold text-white leading-tight">
+        <div className="text-center space-y-4 md:space-y-6 mt-24">
+          <h1 className="text-2xl md:text-5xl font-bold text-white leading-tight">
            ✨ AI-Powered Background Remover
           </h1>
-          <h2 className="text-2xl md:text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+          <h2 className="text-xl md:text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
             See How It Works
           </h2>
-          <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-l md:text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
             Watch how our intelligent AI removes backgrounds from your images instantly. 
             Upload any photo and get professional results in seconds - perfect for product photos, 
             portraits, and social media content.
