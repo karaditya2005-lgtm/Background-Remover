@@ -14,7 +14,7 @@ const authUser = async (req, res, next) => {
 
         // Extract token (remove 'Bearer ' prefix)
         const token = authHeader.split(' ')[1];
-
+        
         if (!token) {
             console.log('❌ Token empty');
             return res.json({ success: false, message: 'Not Authorized. Please Login.' });
@@ -41,10 +41,11 @@ const authUser = async (req, res, next) => {
                 return res.json({ success: false, message: 'Invalid token format' });
             }
             
-            // ⭐ Store clerkId in req.body (this survives through all middlewares)
-            req.body.clerkId = clerkId;
+            // ⭐ IMPORTANT: Store in both req.userId (safe from multer) AND req.body
+            req.userId = clerkId; // This won't be touched by multer
+            req.body.clerkId = clerkId; // This might be overwritten by multer
             
-            console.log('✅ Auth successful, clerkId set in req.body:', clerkId);
+            console.log('✅ Auth successful, clerkId set:', clerkId);
             next();
             
         } catch (decodeError) {

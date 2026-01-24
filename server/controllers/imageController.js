@@ -16,8 +16,9 @@ const removeBgImage = async (req, res) => {
             mimetype: req.file.mimetype
         } : 'NO FILE RECEIVED');
         
-        const { clerkId } = req.body;
-        console.log('📌 ClerkId from req.body:', clerkId);
+        // Get clerkId from req.userId (set by auth middleware, safe from multer)
+        const clerkId = req.userId || req.body.clerkId;
+        console.log('📌 ClerkId:', clerkId);
 
         if (!clerkId) {
             return res.json({ success: false, message: 'Authentication failed. ClerkId not found.' });
@@ -139,8 +140,10 @@ const generateAIBackground = async (req, res) => {
             mimetype: req.file.mimetype
         } : 'NO FILE RECEIVED');
         
-        const { clerkId, prompt } = req.body;
-        console.log('📌 ClerkId from req.body:', clerkId);
+        // Get clerkId from req.userId (set by auth middleware, safe from multer)
+        const clerkId = req.userId || req.body.clerkId;
+        const { prompt } = req.body;
+        console.log('📌 ClerkId:', clerkId);
         console.log('💬 AI Prompt:', prompt);
 
         if (!clerkId) {

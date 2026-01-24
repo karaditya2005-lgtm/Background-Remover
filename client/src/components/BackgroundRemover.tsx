@@ -88,6 +88,11 @@ const BackgroundRemover = () => {
       return;
     }
 
+    if (!user?.id) {
+      toast.error('User authentication failed');
+      return;
+    }
+
     // Double check file size before sending
     const fileSizeMB = (selectedFile.size / (1024 * 1024)).toFixed(2);
     console.log('File size:', fileSizeMB, 'MB');
@@ -102,13 +107,15 @@ const BackgroundRemover = () => {
     try {
       const token = await getToken();
 
-      // Create form data with the original file
+      // Create form data with the original file and clerkId
       const formData = new FormData();
       formData.append('image', selectedFile);
+      formData.append('clerkId', user.id);
 
       const url = `${backendUrl.replace(/\/$/, '')}/api/image/remove-bg`;
       console.log('API URL:', url);
       console.log('Uploading file:', selectedFile.name, `(${fileSizeMB}MB)`);
+      console.log('ClerkId:', user.id);
 
       const response = await fetch(url, {
         method: 'POST',
@@ -159,6 +166,11 @@ const BackgroundRemover = () => {
       return;
     }
 
+    if (!user?.id) {
+      toast.error('User authentication failed');
+      return;
+    }
+
     setIsGeneratingAIBg(true);
 
     try {
@@ -167,9 +179,11 @@ const BackgroundRemover = () => {
       const formData = new FormData();
       formData.append('image', selectedFile);
       formData.append('prompt', aiPrompt.trim());
+      formData.append('clerkId', user.id);
 
       const url = `${backendUrl.replace(/\/$/, '')}/api/image/generate-bg`;
       console.log('Generating AI background with prompt:', aiPrompt);
+      console.log('ClerkId:', user.id);
 
       const response = await fetch(url, {
         method: 'POST',

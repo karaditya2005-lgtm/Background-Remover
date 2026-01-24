@@ -49,12 +49,20 @@ const handleMulterError = (err, req, res, next) => {
     next();
 };
 
-// Remove background (with file upload)
+// ⭐ CORRECTED: authUser BEFORE upload - this is critical!
 imageRouter.post('/remove-bg', 
-    upload.single('image'),
-    handleMulterError,
-    authUser,
-    removeBgImage
+    authUser,              // 1. Authenticate first and set req.userId
+    upload.single('image'), // 2. Then process file upload
+    handleMulterError,     // 3. Handle any upload errors
+    removeBgImage          // 4. Finally run controller
+);
+
+// ⭐ CORRECTED: authUser BEFORE upload
+imageRouter.post('/generate-bg', 
+    authUser,              // 1. Authenticate first and set req.userId
+    upload.single('image'), // 2. Then process file upload
+    handleMulterError,     // 3. Handle any upload errors
+    generateAIBackground   // 4. Finally run controller
 );
 
 // Get user's image history
@@ -62,8 +70,8 @@ imageRouter.get('/history', authUser, getImageHistory);
 
 // Delete image from history
 imageRouter.delete('/history/:imageId', authUser, deleteImage);
-imageRouter.get('/count', getImageCount);
 
-imageRouter.post('/generate-bg', authUser, upload.single('image'), generateAIBackground);
+// Get image count (public route, no auth needed)
+imageRouter.get('/count', getImageCount);
 
 export default imageRouter;
