@@ -1,6 +1,6 @@
 // routes/imageRoutes.js
 import express from 'express';
-import { removeBgImage, getImageHistory, deleteImage, getImageCount } from '../controllers/imageController.js';
+import { removeBgImage, getImageHistory, deleteImage, getImageCount, generateAIBackground } from '../controllers/imageController.js';
 import authUser from '../middlewares/auth.js';
 import multer from 'multer';
 
@@ -63,5 +63,7 @@ imageRouter.get('/history', authUser, getImageHistory);
 // Delete image from history
 imageRouter.delete('/history/:imageId', authUser, deleteImage);
 imageRouter.get('/count', getImageCount);
+
+imageRouter.post('/generate-bg', authUser, upload.single('image'), generateAIBackground);
 
 export default imageRouter;

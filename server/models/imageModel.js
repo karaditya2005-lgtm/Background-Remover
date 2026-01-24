@@ -30,6 +30,10 @@ const imageSchema = new mongoose.Schema({
     fileSize: {
         type: Number // in bytes
     },
+    aiPrompt: {
+        type: String,
+        default: null // NEW: Stores the AI prompt if AI background was generated
+    },
     createdAt: {
         type: Date,
         default: Date.now
