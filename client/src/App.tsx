@@ -5,7 +5,7 @@ import Footer from './components/Footer';
 import LenisScroll from './components/lenis';
 import { Routes, Route } from 'react-router-dom';
 import BackgroundRemover from './components/BackgroundRemover';
- import { ToastContainer, toast } from 'react-toastify';
+ import { ToastContainer } from 'react-toastify';
   import 'react-toastify/dist/ReactToastify.css'
 import ImageHistory from './components/ImageHistory';
 import VideoDemo from './components/VideoDemo';

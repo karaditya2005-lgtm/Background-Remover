@@ -1,5 +1,5 @@
 import { useState, useRef, useContext } from 'react';
-import { Upload, Download, Loader2, X, Check, LogIn } from 'lucide-react';
+import { Upload, Download, Loader2, X, Check, Wand2 } from 'lucide-react';
 import { useAuth, useUser, useClerk } from '@clerk/clerk-react';
 import { AppContext } from '../context/AppContext';
 import { toast } from 'react-toastify';
@@ -11,6 +11,9 @@ const BackgroundRemover = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [backgroundColor, setBackgroundColor] = useState<string>('transparent');
+  const [isGeneratingAIBg, setIsGeneratingAIBg] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState<string>('');
+  const [showAIPrompt, setShowAIPrompt] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -43,6 +46,8 @@ const BackgroundRemover = () => {
         setProcessedImage(null);
         setSelectedFile(file);
         setBackgroundColor('transparent');
+        setShowAIPrompt(false);
+        setAiPrompt('');
       };
       reader.readAsDataURL(file);
     } else {
@@ -132,6 +137,69 @@ const BackgroundRemover = () => {
     }
   };
 
+  const generateAIBackground = async () => {
+    if (!isSignedIn) {
+      toast.error('Please login to generate AI background');
+      openSignIn({});
+      return;
+    }
+
+    if (!processedImage || !selectedFile) {
+      toast.error('Please remove background first');
+      return;
+    }
+
+    if (!aiPrompt.trim()) {
+      toast.error('Please enter a prompt for the AI background');
+      return;
+    }
+
+    if (credit < 1) {
+      toast.error('Insufficient credits. Please purchase more credits.');
+      return;
+    }
+
+    setIsGeneratingAIBg(true);
+
+    try {
+      const token = await getToken();
+
+      const formData = new FormData();
+      formData.append('image', selectedFile);
+      formData.append('prompt', aiPrompt.trim());
+
+      const url = `${backendUrl.replace(/\/$/, '')}/api/image/generate-bg`;
+      console.log('Generating AI background with prompt:', aiPrompt);
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      const data = await response.json();
+      console.log('AI Background Response:', data);
+
+      if (data.success) {
+        setProcessedImage(data.data.processedImageUrl);
+        setBackgroundColor('transparent'); // Reset to show AI bg properly
+        await loadCreditData();
+        toast.success('AI background generated successfully!');
+        setShowAIPrompt(false);
+      } else {
+        toast.error(data.message || 'Failed to generate AI background');
+      }
+      
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error('Failed to generate AI background');
+    } finally {
+      setIsGeneratingAIBg(false);
+    }
+  };
+
   const applyBackgroundColor = (imageUrl: string, bgColor: string): Promise<string> => {
     return new Promise((resolve) => {
       const img = new Image();
@@ -198,6 +266,9 @@ const BackgroundRemover = () => {
     setIsProcessing(false);
     setSelectedFile(null);
     setBackgroundColor('transparent');
+    setShowAIPrompt(false);
+    setAiPrompt('');
+    setIsGeneratingAIBg(false);
   };
 
   const colorPresets = [
@@ -334,53 +405,118 @@ const BackgroundRemover = () => {
               </div>
 
               {processedImage && (
-                <div className="bg-white/5 rounded-lg p-3 border border-white/10">
-                  <h4 className="text-xs font-semibold text-white mb-2">Background Color</h4>
-                  
-                  {/* Color Presets */}
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {colorPresets.map((color) => (
-                      <button
-                        key={color.value}
-                        onClick={() => setBackgroundColor(color.value)}
-                        className={`relative w-8 h-8 rounded-md overflow-hidden transition-all hover:scale-110 ${
-                          backgroundColor === color.value ? 'ring-2 ring-blue-500' : 'ring-1 ring-white/20'
-                        }`}
-                        title={color.name}
-                      >
-                        <div
-                          className="w-full h-full"
-                          style={
-                            color.value === 'transparent'
-                              ? {
-                                  backgroundImage: 'linear-gradient(45deg, #1e293b 25%, transparent 25%), linear-gradient(-45deg, #1e293b 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #1e293b 75%), linear-gradient(-45deg, transparent 75%, #1e293b 75%)',
-                                  backgroundSize: '8px 8px',
-                                  backgroundPosition: '0 0, 0 4px, 4px -4px, -4px 0px'
-                                }
-                              : { backgroundColor: color.value }
-                          }
-                        />
-                        {backgroundColor === color.value && (
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <Check className="w-3 h-3 text-white drop-shadow-lg" />
-                          </div>
-                        )}
-                      </button>
-                    ))}
+                <>
+                  <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+                    <h4 className="text-xs font-semibold text-white mb-2">Background Color</h4>
                     
-                    {/* Custom Color Picker */}
-                    <div className="flex items-center gap-2 ml-2 pl-2 border-l border-white/20">
-                      <input
-                        type="color"
-                        value={backgroundColor === 'transparent' ? '#FFFFFF' : backgroundColor}
-                        onChange={(e) => setBackgroundColor(e.target.value)}
-                        className="w-8 h-8 rounded-md cursor-pointer border border-white/20"
-                        title="Custom color"
-                      />
-                      <span className="text-[10px] font-mono text-slate-400">{backgroundColor === 'transparent' ? 'None' : backgroundColor}</span>
+                    {/* Color Presets */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {colorPresets.map((color) => (
+                        <button
+                          key={color.value}
+                          onClick={() => setBackgroundColor(color.value)}
+                          className={`relative w-8 h-8 rounded-md overflow-hidden transition-all hover:scale-110 ${
+                            backgroundColor === color.value ? 'ring-2 ring-blue-500' : 'ring-1 ring-white/20'
+                          }`}
+                          title={color.name}
+                        >
+                          <div
+                            className="w-full h-full"
+                            style={
+                              color.value === 'transparent'
+                                ? {
+                                    backgroundImage: 'linear-gradient(45deg, #1e293b 25%, transparent 25%), linear-gradient(-45deg, #1e293b 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #1e293b 75%), linear-gradient(-45deg, transparent 75%, #1e293b 75%)',
+                                    backgroundSize: '8px 8px',
+                                    backgroundPosition: '0 0, 0 4px, 4px -4px, -4px 0px'
+                                  }
+                                : { backgroundColor: color.value }
+                            }
+                          />
+                          {backgroundColor === color.value && (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <Check className="w-3 h-3 text-white drop-shadow-lg" />
+                            </div>
+                          )}
+                        </button>
+                      ))}
+                      
+                      {/* Custom Color Picker */}
+                      <div className="flex items-center gap-2 ml-2 pl-2 border-l border-white/20">
+                        <input
+                          type="color"
+                          value={backgroundColor === 'transparent' ? '#FFFFFF' : backgroundColor}
+                          onChange={(e) => setBackgroundColor(e.target.value)}
+                          className="w-8 h-8 rounded-md cursor-pointer border border-white/20"
+                          title="Custom color"
+                        />
+                        <span className="text-[10px] font-mono text-slate-400">{backgroundColor === 'transparent' ? 'None' : backgroundColor}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
+
+                  {/* AI Background Generator */}
+                  <div className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 rounded-lg p-4 border border-purple-500/20">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Wand2 className="w-5 h-5 text-purple-400" />
+                      <h4 className="text-sm font-semibold text-white">AI Background Generator</h4>
+                    </div>
+                    
+                    {!showAIPrompt ? (
+                      <button
+                        onClick={() => setShowAIPrompt(true)}
+                        className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white px-4 py-2.5 rounded-lg font-medium text-sm hover:shadow-lg hover:shadow-purple-500/50 transition-all hover:scale-105 flex items-center justify-center gap-2"
+                      >
+                        <Wand2 className="w-4 h-4" />
+                        Generate AI Background
+                      </button>
+                    ) : (
+                      <div className="space-y-3">
+                        <div>
+                          <input
+                            type="text"
+                            value={aiPrompt}
+                            onChange={(e) => setAiPrompt(e.target.value)}
+                            placeholder="E.g., professional office, sunset beach, modern studio..."
+                            className="w-full bg-white/10 text-white placeholder-slate-400 px-4 py-2.5 rounded-lg border border-white/20 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 text-sm"
+                            disabled={isGeneratingAIBg}
+                          />
+                          <p className="text-xs text-slate-400 mt-1.5">Describe the background you want to generate</p>
+                        </div>
+                        
+                        <div className="flex gap-2">
+                          <button
+                            onClick={generateAIBackground}
+                            disabled={isGeneratingAIBg || !aiPrompt.trim()}
+                            className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 text-white px-4 py-2.5 rounded-lg font-medium text-sm hover:shadow-lg hover:shadow-purple-500/50 transition-all hover:scale-105 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                          >
+                            {isGeneratingAIBg ? (
+                              <>
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                Generating...
+                              </>
+                            ) : (
+                              <>
+                                <Wand2 className="w-4 h-4" />
+                                Generate
+                              </>
+                            )}
+                          </button>
+                          
+                          <button
+                            onClick={() => {
+                              setShowAIPrompt(false);
+                              setAiPrompt('');
+                            }}
+                            disabled={isGeneratingAIBg}
+                            className="px-4 py-2.5 rounded-lg font-medium text-sm bg-slate-700 text-white hover:bg-slate-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </>
               )}
 
               <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 justify-center pt-2 sm:pt-4">

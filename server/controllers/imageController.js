@@ -128,6 +128,137 @@ const removeBgImage = async (req, res) => {
     }
 };
 
+// NEW: Generate AI Background
+const generateAIBackground = async (req, res) => {
+    try {
+        console.log('🎨 Generate AI Background endpoint hit!');
+        console.log('📁 File info:', req.file ? {
+            originalname: req.file.originalname,
+            size: req.file.size,
+            sizeInMB: (req.file.size / (1024 * 1024)).toFixed(2) + 'MB',
+            mimetype: req.file.mimetype
+        } : 'NO FILE RECEIVED');
+        
+        const { clerkId, prompt } = req.body;
+        console.log('📌 ClerkId from req.body:', clerkId);
+        console.log('💬 AI Prompt:', prompt);
+
+        if (!clerkId) {
+            return res.json({ success: false, message: 'Authentication failed. ClerkId not found.' });
+        }
+
+        if (!prompt || !prompt.trim()) {
+            return res.json({ success: false, message: 'Please provide a background prompt' });
+        }
+
+        // Get user data
+        const user = await userModel.findOne({ clerkId });
+        console.log('👤 User found:', user ? `${user.firstName} ${user.lastName}` : 'NOT FOUND');
+
+        if (!user) {
+            return res.json({ 
+                success: false, 
+                message: 'User not found. Please sign up again or contact support.' 
+            });
+        }
+
+        console.log('💰 User credits:', user.creditBalance);
+
+        if (user.creditBalance < 1) {
+            return res.json({ success: false, message: 'Insufficient credits. Please purchase more.' });
+        }
+
+        if (!req.file) {
+            return res.json({ success: false, message: 'No image file provided' });
+        }
+
+        console.log('📸 Image received:', req.file.originalname, `(${(req.file.size / 1024).toFixed(2)} KB)`);
+
+        // Upload original image to Cloudinary
+        console.log('☁️ Uploading original image to Cloudinary...');
+        const originalUpload = await uploadToCloudinary(req.file.buffer, 'bg-remover/original');
+        console.log('✅ Original uploaded:', originalUpload.secure_url);
+
+        // Create form data for ClipDrop Replace Background API
+        const formData = new FormData();
+        formData.append('image_file', req.file.buffer, {
+            filename: req.file.originalname,
+            contentType: req.file.mimetype
+        });
+        formData.append('prompt', prompt.trim());
+
+        console.log('🚀 Calling ClipDrop Replace Background API...');
+
+        // Call ClipDrop Replace Background API
+        const response = await axios.post(
+            'https://clipdrop-api.co/replace-background/v1',
+            formData,
+            {
+                headers: {
+                    'x-api-key': process.env.CLIPDROP_API_KEY,
+                    ...formData.getHeaders()
+                },
+                responseType: 'arraybuffer'
+            }
+        );
+
+        console.log('✅ ClipDrop Replace Background API success!');
+
+        // Upload AI generated background image to Cloudinary
+        console.log('☁️ Uploading AI background image to Cloudinary...');
+        const processedUpload = await uploadToCloudinary(
+            Buffer.from(response.data), 
+            'bg-remover/ai-background'
+        );
+        console.log('✅ AI background uploaded:', processedUpload.secure_url);
+
+        // Save image history to database
+        const imageRecord = await imageModel.create({
+            clerkId,
+            originalImageUrl: originalUpload.secure_url,
+            processedImageUrl: processedUpload.secure_url,
+            originalPublicId: originalUpload.public_id,
+            processedPublicId: processedUpload.public_id,
+            fileName: req.file.originalname,
+            fileSize: req.file.size,
+            aiPrompt: prompt.trim() // Save the AI prompt used
+        });
+
+        console.log('💾 Image history saved:', imageRecord._id);
+
+        // Deduct 1 credit from user
+        console.log('💳 Deducting 1 credit...');
+        await userModel.findOneAndUpdate(
+            { clerkId },
+            { $inc: { creditBalance: -1 } }
+        );
+
+        console.log('✅ Credit deducted successfully');
+        console.log('🎉 AI Background generation complete!');
+
+        res.json({
+            success: true,
+            message: 'AI background generated successfully',
+            data: {
+                originalImageUrl: originalUpload.secure_url,
+                processedImageUrl: processedUpload.secure_url,
+                imageId: imageRecord._id,
+                aiPrompt: prompt.trim()
+            },
+            creditBalance: user.creditBalance - 1
+        });
+
+    } catch (error) {
+        console.error('❌ Generate AI Background Error:', error.message);
+        console.error('Error details:', error.response?.data || error);
+        
+        res.json({ 
+            success: false, 
+            message: error.response?.data?.error || error.message || 'Failed to generate AI background'
+        });
+    }
+};
+
 // Get user's image history
 const getImageHistory = async (req, res) => {
     try {
@@ -188,6 +319,7 @@ const deleteImage = async (req, res) => {
         res.json({ success: false, message: error.message });
     }
 };
+
 const getImageCount = async (req, res) => {
     try {
         const totalImages = await imageModel.countDocuments();
@@ -202,4 +334,4 @@ const getImageCount = async (req, res) => {
     }
 };
 
-export { removeBgImage, getImageHistory, deleteImage, getImageCount };
+export { removeBgImage, generateAIBackground, getImageHistory, deleteImage, getImageCount };
